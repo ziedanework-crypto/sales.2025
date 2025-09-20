@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 import numpy as np
 
 # تحميل البيانات
@@ -15,33 +14,42 @@ for col in months:
 
 # إعداد الصفحة
 st.set_page_config(page_title="تحليل مبيعات المناطق", layout="wide")
-st.title("📊 تحليل مبيعات المناطق عبر الشهور")
-
-# عرض البيانات الأصلية
-st.subheader("البيانات الأصلية بعد التنظيف")
-st.dataframe(df)
+st.title("تحليل مبيعات المناطق عبر الشهور")
 
 # تحويل البيانات من Wide إلى Long
 df_long = df.melt(id_vars=["المنطقة"], var_name="الشهر", value_name="المبيعات")
 
-# رسم بياني خطي متطور
+# ===== 🎛️ الفلاتر التفاعلية =====
+st.sidebar.header("خيارات العرض")
+selected_regions = st.sidebar.multiselect("اختر المناطق", options=df["المنطقة"].unique(), default=df["المنطقة"].unique())
+selected_months = st.sidebar.multiselect("اختر الشهور", options=months, default=months)
+
+# تصفية البيانات حسب الفلاتر
+filtered_df = df[df["المنطقة"].isin(selected_regions)][["المنطقة"] + selected_months]
+filtered_long = filtered_df.melt(id_vars=["المنطقة"], var_name="الشهر", value_name="المبيعات")
+
+# ===== 🧾 عرض البيانات =====
+st.subheader("البيانات بعد التنظيف والتصفية")
+st.dataframe(filtered_df)
+
+# ===== 📈 رسم بياني خطي =====
 fig_line = px.line(
-    df_long, x="الشهر", y="المبيعات", color="المنطقة", markers=True,
-    title="تطور المبيعات لكل منطقة",
+    filtered_long, x="الشهر", y="المبيعات", color="المنطقة", markers=True,
+    title="تطور المبيعات حسب الفلاتر",
     color_discrete_sequence=px.colors.qualitative.Set2
 )
 st.plotly_chart(fig_line, use_container_width=True)
 
-# رسم بياني عمودي متداخل
+# ===== 📊 رسم بياني عمودي =====
 fig_bar = px.bar(
-    df_long, x="الشهر", y="المبيعات", color="المنطقة", barmode="group",
-    title="مقارنة المبيعات بين المناطق في كل شهر",
+    filtered_long, x="الشهر", y="المبيعات", color="المنطقة", barmode="group",
+    title="مقارنة المبيعات بين المناطق",
     color_discrete_sequence=px.colors.qualitative.Pastel
 )
 st.plotly_chart(fig_bar, use_container_width=True)
 
-# رسم بياني حراري
-pivot = df_long.pivot_table(index="المنطقة", columns="الشهر", values="المبيعات")
+# ===== 🌡️ خريطة حرارية =====
+pivot = filtered_long.pivot_table(index="المنطقة", columns="الشهر", values="المبيعات")
 fig_heatmap = px.imshow(
     pivot, text_auto=True, aspect="auto",
     title="خريطة حرارية لأداء المبيعات",
@@ -49,26 +57,27 @@ fig_heatmap = px.imshow(
 )
 st.plotly_chart(fig_heatmap, use_container_width=True)
 
-# تحليل شهري لأعلى وأقل منطقة
+# ===== 🥇 تحليل شهري لأعلى وأقل منطقة =====
 st.subheader("تحليل شهري لأعلى وأقل منطقة")
-for month in months:
-    month_data = df[["المنطقة", month]].dropna()
-    top = month_data.loc[month_data[month].idxmax()]
-    low = month_data.loc[month_data[month].idxmin()]
-    st.markdown(f"""
-    **{month}:**
-    - الأعلى مبيعًا: {top['المنطقة']} بمبيعات {int(top[month]):,}
-    - الأقل مبيعًا: {low['المنطقة']} بمبيعات {int(low[month]):,}
-    """)
+for month in selected_months:
+    month_data = filtered_df[["المنطقة", month]].dropna()
+    if not month_data.empty:
+        top = month_data.loc[month_data[month].idxmax()]
+        low = month_data.loc[month_data[month].idxmin()]
+        st.markdown(f"""
+        **{month}:**
+        - الأعلى مبيعًا: {top['المنطقة']} بمبيعات {int(top[month]):,}
+        - الأقل مبيعًا: {low['المنطقة']} بمبيعات {int(low[month]):,}
+        """)
 
-# تحليل المتوسط والانحراف
-st.subheader("تحليل متوسط الأداء والتذبذب")
-summary = df_long.groupby("المنطقة")["المبيعات"].agg(["mean", "std", "min", "max"])
+# ===== 📊 تحليل المتوسط والتذبذب والمدى =====
+st.subheader("تحليل متوسط الأداء والتذبذب والمدى")
+summary = filtered_long.groupby("المنطقة")["المبيعات"].agg(["mean", "std", "min", "max"])
 summary["range"] = summary["max"] - summary["min"]
 summary = summary.sort_values(by="mean", ascending=False)
 st.dataframe(summary.style.format("{:,.0f}"))
 
-# رسم بياني لأعلى متوسط
+# ===== 📉 رسم بياني للمتوسط =====
 fig_avg = px.bar(
     summary.reset_index(), x="المنطقة", y="mean",
     title="متوسط المبيعات لكل منطقة",
@@ -76,7 +85,7 @@ fig_avg = px.bar(
 )
 st.plotly_chart(fig_avg, use_container_width=True)
 
-# رسم بياني للتذبذب
+# ===== 📉 رسم بياني للتذبذب =====
 fig_std = px.bar(
     summary.reset_index(), x="المنطقة", y="std",
     title="تذبذب الأداء (الانحراف المعياري)",
@@ -84,27 +93,27 @@ fig_std = px.bar(
 )
 st.plotly_chart(fig_std, use_container_width=True)
 
-# تحليل الاتجاه العام لكل منطقة
-st.subheader("تحليل الاتجاه العام")
-trend = df_long.groupby(["المنطقة", "الشهر"])["المبيعات"].mean().reset_index()
+# ===== 📈 الاتجاه العام =====
+st.subheader("الاتجاه العام للمبيعات")
+trend = filtered_long.groupby(["المنطقة", "الشهر"])["المبيعات"].mean().reset_index()
 fig_trend = px.line(
     trend, x="الشهر", y="المبيعات", color="المنطقة",
-    title="الاتجاه العام للمبيعات عبر الشهور",
+    title="الاتجاه العام عبر الشهور",
     color_discrete_sequence=px.colors.qualitative.Dark24
 )
 st.plotly_chart(fig_trend, use_container_width=True)
 
-# جمل تحفيزية ذكية
+# ===== 💬 جمل تحفيزية =====
 st.subheader("ملاحظات تحفيزية حسب الأداء")
 for index, row in summary.iterrows():
     avg = row["mean"]
     std = row["std"]
     rng = row["range"]
-    if avg > df_long["المبيعات"].mean() and std < df_long["المبيعات"].std():
+    if avg > filtered_long["المبيعات"].mean() and std < filtered_long["المبيعات"].std():
         st.markdown(f"- {index}: أداء قوي ومتزن، حافظ على الاستقرار وابدأ التوسع بثقة.")
-    elif avg > df_long["المبيعات"].mean():
+    elif avg > filtered_long["المبيعات"].mean():
         st.markdown(f"- {index}: أداء مرتفع، لكن راقب التذبذب لضمان الاستدامة.")
-    elif std < df_long["المبيعات"].std():
-        st.markdown(f"- {index}: أداء مستقر، فرصة ممتازة لتجربة استراتيجيات جديدة.")
+    elif std < filtered_long["المبيعات"].std():
+        st.markdown(f"- {index}: أداء متوسط لكن مستقر، فرصة ممتازة لتجربة استراتيجيات جديدة.")
     else:
         st.markdown(f"- {index}: التذبذب واضح، راجع نقاط الضعف وركّز على التحسين التدريجي.")
