@@ -1,10 +1,9 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import numpy as np
 
-# تحميل البيانات من ملف CSV
-df = pd.read_csv("sales_data.csv")
+# تحميل البيانات من الملف الجديد
+df = pd.read_csv("sales.csv")
 
 # تنظيف الأرقام من الفواصل وتحويلها لقيم رقمية
 months = [col for col in df.columns if col.startswith("Sales")]
