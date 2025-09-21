@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 import numpy as np
 
-# تحميل البيانات من sales.csv
+# تحميل البيانات
 df = pd.read_csv("sales.csv")
 
 # استخراج أسماء الشهور
@@ -15,13 +15,14 @@ for col in months:
     df[col] = pd.to_numeric(df[col], errors="coerce")
 
 # إعداد الصفحة
-st.set_page_config(page_title="لوحة تحليل المبيعات", layout="wide")
-st.title("📊 لوحة تحليل المبيعات حسب طرق الدفع والشهور")
+st.set_page_config(page_title="لوحة تحليل المشتريات", layout="wide")
+st.title("📊 لوحة تحليل المشتريات حسب طرق الدفع والشهور")
 
 # ===== 🎛️ الفلاتر =====
 st.sidebar.header("خيارات العرض")
 selected_methods = st.sidebar.multiselect("اختر طرق الدفع", options=df["حالة الدفع"].unique(), default=df["حالة الدفع"].unique())
 selected_months = st.sidebar.multiselect("اختر الشهور", options=months, default=list(months))
+compare_methods = st.sidebar.multiselect("قارن بين طريقتين دفع", options=df["حالة الدفع"].unique(), default=[])
 
 # تصفية البيانات
 filtered_df = df[df["حالة الدفع"].isin(selected_methods)][["حالة الدفع"] + selected_months]
@@ -50,7 +51,7 @@ for month in selected_months:
     )
     st.plotly_chart(fig_pie, use_container_width=True)
 
-# ===== 📊 تحليل إحصائي لكل طريقة دفع =====
+# ===== 📊 تحليل إحصائي شامل =====
 st.subheader("📊 تحليل متوسط الأداء والتذبذب والمدى")
 stats = df_long.groupby("حالة الدفع")["القيمة"].agg(["mean", "std", "min", "max"])
 stats["range"] = stats["max"] - stats["min"]
@@ -74,27 +75,31 @@ fig_std = px.bar(
 )
 st.plotly_chart(fig_std, use_container_width=True)
 
-# ===== 📆 إجمالي المشتريات لكل شهر =====
-st.subheader("📆 إجمالي المشتريات لكل شهر")
-total_per_month = df[months].sum().reset_index()
-total_per_month.columns = ["الشهر", "الإجمالي"]
-fig_total = px.bar(
-    total_per_month, x="الشهر", y="الإجمالي",
-    title="إجمالي المشتريات الشهرية",
-    color="الشهر", color_discrete_sequence=px.colors.qualitative.Set1
-)
-st.plotly_chart(fig_total, use_container_width=True)
+# ===== 🆚 مقارنة بين طريقتين دفع =====
+if len(compare_methods) == 2:
+    st.subheader(f"🆚 مقارنة مباشرة بين {compare_methods[0]} و {compare_methods[1]}")
+    df_compare = df[df["حالة الدفع"].isin(compare_methods)][["حالة الدفع"] + list(selected_months)]
+    df_compare_long = df_compare.melt(id_vars=["حالة الدفع"], var_name="الشهر", value_name="القيمة")
+    fig_compare = px.line(
+        df_compare_long, x="الشهر", y="القيمة", color="حالة الدفع", markers=True,
+        title="مقارنة الأداء بين طريقتين دفع",
+        color_discrete_sequence=px.colors.qualitative.Set1
+    )
+    st.plotly_chart(fig_compare, use_container_width=True)
 
-# ===== 🥧 رسم دائري للإجمالي حسب طريقة الدفع =====
-st.subheader("🥧 توزيع إجمالي المشتريات حسب طريقة الدفع")
-total_by_method = df.set_index("حالة الدفع")[months].sum(axis=1).reset_index()
-total_by_method.columns = ["حالة الدفع", "الإجمالي"]
-fig_pie_total = px.pie(
-    total_by_method, names="حالة الدفع", values="الإجمالي",
-    title="نسب توزيع طرق الدفع",
-    color_discrete_sequence=px.colors.qualitative.Set3
-)
-st.plotly_chart(fig_pie_total, use_container_width=True)
+# ===== 📆 أعلى وأقل شهر لكل طريقة دفع =====
+st.subheader("📆 أعلى وأقل شهر لكل طريقة دفع")
+for method in selected_methods:
+    row = df[df["حالة الدفع"] == method][selected_months].T
+    row.columns = ["القيمة"]
+    row["الشهر"] = row.index
+    max_row = row.loc[row["القيمة"].idxmax()]
+    min_row = row.loc[row["القيمة"].idxmin()]
+    st.markdown(f"""
+    - **{method}**  
+      أعلى شهر: {max_row['الشهر']} بمشتريات {int(max_row['القيمة']):,}  
+      أقل شهر: {min_row['الشهر']} بمشتريات {int(min_row['القيمة']):,}
+    """)
 
 # ===== 💬 توصيات وتحفيز =====
 st.subheader("💬 توصيات مالية وتحفيزية")
