@@ -40,16 +40,22 @@ fig_line = px.line(
 )
 st.plotly_chart(fig_line, use_container_width=True)
 
-# ===== 🥧 رسم دائري لكل شهر =====
+# ===== 🥧 رسوم دائرية جنب بعض =====
 st.subheader("🥧 توزيع المشتريات حسب طريقة الدفع لكل شهر")
-for month in selected_months:
-    month_data = filtered_df[["حالة الدفع", month]].dropna()
-    fig_pie = px.pie(
-        month_data, names="حالة الدفع", values=month,
-        title=f"توزيع طرق الدفع - {month}",
-        color_discrete_sequence=px.colors.qualitative.Set3
-    )
-    st.plotly_chart(fig_pie, use_container_width=True)
+chunk_size = 3
+month_chunks = [selected_months[i:i+chunk_size] for i in range(0, len(selected_months), chunk_size)]
+
+for chunk in month_chunks:
+    cols = st.columns(len(chunk))
+    for i, month in enumerate(chunk):
+        with cols[i]:
+            month_data = filtered_df[["حالة الدفع", month]].dropna()
+            fig_pie = px.pie(
+                month_data, names="حالة الدفع", values=month,
+                title=f"{month}",
+                color_discrete_sequence=px.colors.qualitative.Set3
+            )
+            st.plotly_chart(fig_pie, use_container_width=True)
 
 # ===== 📊 تحليل إحصائي شامل =====
 st.subheader("📊 تحليل متوسط الأداء والتذبذب والمدى")
