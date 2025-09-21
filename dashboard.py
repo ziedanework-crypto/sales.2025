@@ -3,18 +3,20 @@ import pandas as pd
 import plotly.express as px
 import numpy as np
 
-# تحميل البيانات
-df = pd.read_csv("payments.csv")
+# تحميل البيانات من sales.csv
+df = pd.read_csv("sales.csv")
+
+# استخراج أسماء الشهور
+months = df.columns[1:]
 
 # تنظيف الأرقام
-months = df.columns[1:]
 for col in months:
     df[col] = df[col].astype(str).str.replace(",", "").str.strip()
     df[col] = pd.to_numeric(df[col], errors="coerce")
 
 # إعداد الصفحة
-st.set_page_config(page_title="لوحة تحليل طرق الدفع", layout="wide")
-st.title("لوحة تحليل طرق الدفع والمشتريات عبر الشهور")
+st.set_page_config(page_title="لوحة تحليل المبيعات", layout="wide")
+st.title("📊 لوحة تحليل المبيعات حسب طرق الدفع والشهور")
 
 # ===== 🎛️ الفلاتر =====
 st.sidebar.header("خيارات العرض")
