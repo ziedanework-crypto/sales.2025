@@ -73,9 +73,11 @@ fig_pie = px.pie(
 )
 st.plotly_chart(fig_pie, use_container_width=True)
 
-# 🔵 رسم فقاعي للتغير
+# 🔵 رسم فقاعي للتغير بين يوليو وسبتمبر
 st.subheader("🔵 الرسم الفقاعي للتغير بين يوليو وسبتمبر")
-bubble_df = df[df["المنطقة"].isin(selected_regions)]
+bubble_df = df[df["المنطقة"].isin(selected_regions)].copy()
+bubble_df["التغير"] = bubble_df["التغير"].apply(lambda x: max(x, 1))  # منع القيم السالبة أو الصفرية
+
 fig_bubble = px.scatter(
     bubble_df,
     x="يوليو",
