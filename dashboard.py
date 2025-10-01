@@ -49,7 +49,7 @@ filtered_customers = customers_melted[
     customers_melted["الشهر"].isin(selected_months)
 ]
 
-# 📈 الجزء العلوي: المبيعات
+# 📊 رسم شريطي للمبيعات
 st.subheader("💰 مقارنة المبيعات حسب الأشهر")
 fig_sales = px.bar(
     filtered_sales,
@@ -74,7 +74,7 @@ fig_sales_line = px.line(
 )
 st.plotly_chart(fig_sales_line, use_container_width=True)
 
-# 📊 الجزء السفلي: عدد العملاء
+# 👥 رسم شريطي للعملاء
 st.subheader("👥 مقارنة عدد العملاء حسب الأشهر")
 fig_customers = px.bar(
     filtered_customers,
@@ -99,10 +99,35 @@ fig_customers_line = px.line(
 )
 st.plotly_chart(fig_customers_line, use_container_width=True)
 
-# 🧠 تحليل ذكي للمخازن
+# 📌 متوسطات الأداء لكل منطقة
+st.subheader("📌 متوسط الأداء لكل منطقة")
+sales_df["متوسط المبيعات"] = sales_df[["يوليو", "أغسطس", "سبتمبر"]].mean(axis=1).astype(int)
+customers_df["متوسط العملاء"] = customers_df[["يوليو", "أغسطس", "سبتمبر"]].mean(axis=1).round(1)
+
+avg_df = pd.DataFrame({
+    "المنطقة": sales_df["المنطقة"],
+    "متوسط المبيعات": sales_df["متوسط المبيعات"],
+    "متوسط العملاء": customers_df["متوسط العملاء"]
+})
+st.dataframe(avg_df.style.format({"متوسط المبيعات": "{:,}", "متوسط العملاء": "{:.1f}"}).highlight_max(axis=0, color="lightgreen"))
+
+# 📊 متوسط الأداء الشهري لجميع المناطق
+st.subheader("📊 متوسط الأداء الشهري لجميع المناطق")
+monthly_sales_avg = sales_df[["يوليو", "أغسطس", "سبتمبر"]].mean().astype(int)
+monthly_customers_avg = customers_df[["يوليو", "أغسطس", "سبتمبر"]].mean().round(1)
+
+st.markdown("**متوسط المبيعات:**")
+for month in monthly_sales_avg.index:
+    st.markdown(f"- {month}: **{monthly_sales_avg[month]:,}**")
+
+st.markdown("**متوسط عدد العملاء:**")
+for month in monthly_customers_avg.index:
+    st.markdown(f"- {month}: **{monthly_customers_avg[month]:.1f}**")
+
+# 🧪 تحليل خاص للمخازن
 st.subheader("🧪 تحليل خاص لمنطقة المخازن")
-warehouse_sales = sales_df[sales_df["المنطقة"] == "مخازن"].iloc[0, 1:]
-warehouse_customers = customers_df[customers_df["المنطقة"] == "مخازن"].iloc[0, 1:]
+warehouse_sales = sales_df[sales_df["المنطقة"] == "مخازن"].iloc[0, 1:4]
+warehouse_customers = customers_df[customers_df["المنطقة"] == "مخازن"].iloc[0, 1:4]
 
 sales_diff = warehouse_sales["سبتمبر"] - warehouse_sales["يوليو"]
 customers_diff = warehouse_customers["سبتمبر"] - warehouse_customers["يوليو"]
@@ -110,9 +135,4 @@ customers_diff = warehouse_customers["سبتمبر"] - warehouse_customers["يو
 sales_trend = "📈 زيادة" if sales_diff > 0 else "📉 انخفاض"
 customers_trend = "📈 زيادة" if customers_diff > 0 else "📉 انخفاض"
 
-st.markdown(f"- المبيعات في المخازن شهدت {sales_trend} بمقدار **{abs(sales_diff):,}** بين يوليو وسبتمبر.")
-st.markdown(f"- عدد العملاء في المخازن شهد {customers_trend} بمقدار **{abs(customers_diff)}** خلال نفس الفترة.")
-
-# 🎨 لمسة محمد
-st.markdown("---")
-st.markdown("🎨 تم تنفيذ هذه اللوحة بواسطة محمد، فنان البيانات وصانع البوتات الساحرة 💡")
+st.markdown(f"- المبيعات في المخازن شهدت {sales_trend} بمقدار **{abs(sales_diff):,}**
