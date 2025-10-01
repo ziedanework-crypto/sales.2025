@@ -34,12 +34,12 @@ customers_df = pd.DataFrame(customers_data)
 sales_melted = sales_df.melt(id_vars="المنطقة", var_name="الشهر", value_name="المبيعات")
 customers_melted = customers_df.melt(id_vars="المنطقة", var_name="الشهر", value_name="عدد العملاء")
 
-# 🎛️ الفلاتر
+# 🎛️ الفلاتر الجانبية
 st.sidebar.header("🎛️ الفلاتر")
 selected_regions = st.sidebar.multiselect("اختر المناطق", options=sales_df["المنطقة"].unique(), default=sales_df["المنطقة"].unique())
 selected_months = st.sidebar.multiselect("اختر الأشهر", options=["يوليو", "أغسطس", "سبتمبر"], default=["يوليو", "أغسطس", "سبتمبر"])
 
-# تصفية البيانات
+# تصفية البيانات حسب الفلاتر
 filtered_sales = sales_melted[
     sales_melted["المنطقة"].isin(selected_regions) &
     sales_melted["الشهر"].isin(selected_months)
@@ -135,4 +135,14 @@ customers_diff = warehouse_customers["سبتمبر"] - warehouse_customers["يو
 sales_trend = "📈 زيادة" if sales_diff > 0 else "📉 انخفاض"
 customers_trend = "📈 زيادة" if customers_diff > 0 else "📉 انخفاض"
 
-st.markdown(f"- المبيعات في المخازن شهدت {sales_trend} بمقدار **{abs(sales_diff):,}**
+st.markdown(f"**المبيعات في المخازن شهدت {sales_trend} بمقدار {abs(sales_diff):,} بين يوليو وسبتمبر.**")
+st.markdown(f"**عدد العملاء شهد {customers_trend} بمقدار {abs(customers_diff)} خلال نفس الفترة.**")
+
+# 💬 تعليق المساعد التحليلي
+st.markdown("---")
+st.markdown("💬 **تعليق المساعد:**")
+st.markdown("إذا كانت منطقتك فوق المتوسط، فإنت على الطريق الصح! ولو تحت، فدي فرصة للتحسين والتميز في الشهر القادم 💪")
+
+# 🎨 لمسة محمد
+st.markdown("---")
+st.markdown("🎨 تم تنفيذ هذه اللوحة بواسطة محمد، فنان البيانات وصانع البوتات الساحرة 💡")
