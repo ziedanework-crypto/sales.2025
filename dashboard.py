@@ -18,8 +18,12 @@ data = {
 }
 df = pd.DataFrame(data)
 
+# إضافة الإجمالي والتغير
+df["الإجمالي"] = df[["يوليو", "أغسطس", "سبتمبر"]].sum(axis=1)
+df["التغير"] = df["سبتمبر"] - df["يوليو"]
+
 # تحويل البيانات إلى شكل طويل
-df_melted = df.melt(id_vars="المنطقة", var_name="الشهر", value_name="القيمة")
+df_melted = df.melt(id_vars=["المنطقة", "الإجمالي", "التغير"], var_name="الشهر", value_name="القيمة")
 
 # 🎛️ الفلاتر
 selected_regions = st.multiselect("اختر المناطق", options=df["المنطقة"].unique(), default=df["المنطقة"].unique())
@@ -31,8 +35,8 @@ filtered_df = df_melted[
     df_melted["الشهر"].isin(selected_months)
 ]
 
-# 📈 رسم بياني شريطي
-st.subheader("📊 الرسم البياني الشريطي")
+# 📊 رسم بياني شريطي
+st.subheader("📊 الرسم الشريطي المقارن")
 fig_bar = px.bar(
     filtered_df,
     x="المنطقة",
@@ -46,17 +50,43 @@ fig_bar = px.bar(
 st.plotly_chart(fig_bar, use_container_width=True)
 
 # 📉 رسم بياني خطي
-st.subheader("📉 الرسم البياني الخطي")
+st.subheader("📉 الرسم الخطي لتطور القيم")
 fig_line = px.line(
     filtered_df,
     x="الشهر",
     y="القيمة",
     color="المنطقة",
     markers=True,
-    title="تطور القيم عبر الأشهر",
-    line_shape="linear"
+    title="تطور القيم عبر الأشهر"
 )
 st.plotly_chart(fig_line, use_container_width=True)
+
+# 🥧 رسم دائري لأعلى 5 مناطق حسب الإجمالي
+st.subheader("🥧 الرسم الدائري لأعلى 5 مناطق")
+top5 = df[df["المنطقة"].isin(selected_regions)].sort_values("الإجمالي", ascending=False).head(5)
+fig_pie = px.pie(
+    top5,
+    names="المنطقة",
+    values="الإجمالي",
+    title="نسبة مساهمة المناطق في الإجمالي",
+    hole=0.4
+)
+st.plotly_chart(fig_pie, use_container_width=True)
+
+# 🔵 رسم فقاعي للتغير
+st.subheader("🔵 الرسم الفقاعي للتغير بين يوليو وسبتمبر")
+bubble_df = df[df["المنطقة"].isin(selected_regions)]
+fig_bubble = px.scatter(
+    bubble_df,
+    x="يوليو",
+    y="سبتمبر",
+    size="التغير",
+    color="المنطقة",
+    hover_name="المنطقة",
+    title="تغير القيم بين يوليو وسبتمبر",
+    size_max=60
+)
+st.plotly_chart(fig_bubble, use_container_width=True)
 
 # 📋 جدول البيانات
 st.subheader("📋 جدول البيانات")
